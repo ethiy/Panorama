@@ -82,7 +82,6 @@ Matrix<float> getHomography(const vector<IntPoint2>& pts1,
                             << x1[2]*x2[0]-x1[0]*x2[2] << ' '
                             << x1[0]*x2[1]-x1[1]*x2[0] << endl;
     }
-    cout << "H^-1= " << inverse(H) << endl; 
     return H;
 }
 
@@ -107,7 +106,7 @@ int neighbor(float x)
 IntPoint2 pull(IntPoint2 point,  Matrix<float> H)
 {
     Vector<float> v(3);
-    v[0]=0; v[1]=0; v[2]=1;
+    v[0]=point.x() ; v[1]=point.y(); v[2]=1;
     v=inverse(H)*v; v/=v[2];
     return IntPoint2(neighbor(v[0]), neighbor(v[1]));
 }
@@ -138,25 +137,30 @@ void panorama(const Image<Color,2>& I1, const Image<Color,2>& I2,
 
     Image<Color> I(int(x1-x0), int(y1-y0));
     setActiveWindow( openWindow(I.width(), I.height()) );
-    I.fill(BLACK);
 
-    byte overlap(0);
-    for(size_t i=1; i<I.width(); i++)
+    int overlap(0);
+    for(size_t i=0; i<I.width(); i++)
     {
         for(size_t j=0; j<I.height(); j++)
         {
-            if(neighbor(i+x0) >= 0 && neighbor(i+x0)<=I2.width() && neighbor(j+y0) >= 0 && neighbor(j+y0) <= I2.height())
+            I(i,j)=RGB< unsigned char >(0,0,0);
+            overlap = 0;
+            if(neighbor(i+x0) >= 0 && neighbor(i+x0) < I2.width() && neighbor(j+y0) >= 0 && neighbor(j+y0) < I2.height())
             {
                 overlap++;
-                I(i,j) = I2(i,j);
+                I(i,j) += I2(i,j);
             }
             IntPoint2 pulled_pixel = pull(IntPoint2(i,j), H);
-            if( pulled_pixel.x() >=0 && pulled_pixel.y() >=0 && pulled_pixel.x() <= I1.width() && pulled_pixel.y() <= I1.height() )
+
+            if( pulled_pixel.x() >=0 && pulled_pixel.y() >=0 && pulled_pixel.x() < I1.width() && pulled_pixel.y() < I1.height() )
             {
                 overlap++;
                 I(i,j)+= I1(pulled_pixel.x(), pulled_pixel.y());
             }
-            I(i,j) /= overlap;
+            cout << overlap << endl;
+            if(overlap)
+                I(i,j) /= overlap;
+            cout << "I(" << i << "," << j << ")= " << I(i,j) << endl; 
         }
     }
     display(I,0,0);
