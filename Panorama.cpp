@@ -57,7 +57,11 @@ Matrix<float> getHomography(const vector<IntPoint2>& pts1,
     }
     Matrix<float> A(2*n,8);
     Vector<float> B(2*n);
-    // ------------- TODO/A completer ----------
+    for(size_t i=0; i<n; i++)
+    {
+        A(2*i,0) = pts1[i].x(); A(2*i,1) = pts1[i].y(); A(2*i,2) = 1; A(2*i,3) = 0; A(2*i,4) = 0; A(2*i,5) = 0; A(2*i,6) = - pts1[i].x() * pts2[i].x(); A(2*i,7) = -  pts2[i].x() * pts1[i].y(); B[2*i] = pts2[i].x();
+        A(2*i+1,0) = 0; A(2*i+1,1) =0; A(2*i+1,2) = 0; A(2*i+1,3) = pts1[i].x(); A(2*i+1,4) = pts1[i].y(); A(2*i+1,5) = 1; A(2*i+1,6) = - pts1[i].x() * pts2[i].y(); A(2*i+1,7) = -  pts2[i].y() * pts1[i].y(); B[2*i+1] = pts2[i].y();
+    }
 
     B = linSolve(A, B);
     Matrix<float> H(3, 3);
@@ -72,9 +76,9 @@ Matrix<float> getHomography(const vector<IntPoint2>& pts1,
         Vector<float> x1(v1,3);
         Vector<float> x2(v2,3);
         x1 = H*x1;
-        cout << x1[1]*x2[2]-x1[2]*x2[1] << ' '
-             << x1[2]*x2[0]-x1[0]*x2[2] << ' '
-             << x1[0]*x2[1]-x1[1]*x2[0] << endl;
+        cout << "(x'^(Hx))_" << i << "= " << x1[1]*x2[2]-x1[2]*x2[1] << ' '
+                            << x1[2]*x2[0]-x1[0]*x2[2] << ' '
+                            << x1[0]*x2[1]-x1[1]*x2[0] << endl;
     }
     return H;
 }
