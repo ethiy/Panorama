@@ -8,6 +8,8 @@
 #include <Imagine/LinAlg.h>
 #include <vector>
 #include <sstream>
+#include <cmath>
+
 using namespace Imagine;
 using namespace std;
 
@@ -80,6 +82,7 @@ Matrix<float> getHomography(const vector<IntPoint2>& pts1,
                             << x1[2]*x2[0]-x1[0]*x2[2] << ' '
                             << x1[0]*x2[1]-x1[1]*x2[0] << endl;
     }
+    cout << "H^-1= " << inverse(H) << endl; 
     return H;
 }
 
@@ -89,6 +92,24 @@ void growTo(float& x0, float& y0, float& x1, float& y1, float x, float y) {
     if(x>x1) x1=x;
     if(y<y0) y0=y;
     if(y>y1) y1=y;    
+}
+
+int neighbor(float x)
+{
+    int neighbor = floor(x);
+
+    if(x- static_cast<float>(neighbor) >.5)
+        return neighbor+1;
+    else
+        return neighbor;
+}
+
+IntPoint2 pull(IntPoint2 point,  Matrix<float> H)
+{
+    Vector<float> v(3);
+    v[0]=0; v[1]=0; v[2]=1;
+    v=inverse(H)*v; v/=v[2];
+    return IntPoint2(neighbor(v[0]), neighbor(v[1]));
 }
 
 // Panorama construction
@@ -117,8 +138,27 @@ void panorama(const Image<Color,2>& I1, const Image<Color,2>& I2,
 
     Image<Color> I(int(x1-x0), int(y1-y0));
     setActiveWindow( openWindow(I.width(), I.height()) );
-    I.fill(WHITE);
-    // ------------- TODO/A completer ----------
+    I.fill(BLACK);
+
+    byte overlap(0);
+    for(size_t i=1; i<I.width(); i++)
+    {
+        for(size_t j=0; j<I.height(); j++)
+        {
+            if(neighbor(i+x0) >= 0 && neighbor(i+x0)<=I2.width() && neighbor(j+y0) >= 0 && neighbor(j+y0) <= I2.height())
+            {
+                overlap++;
+                I(i,j) = I2(i,j);
+            }
+            IntPoint2 pulled_pixel = pull(IntPoint2(i,j), H);
+            if( pulled_pixel.x() >=0 && pulled_pixel.y() >=0 && pulled_pixel.x() <= I1.width() && pulled_pixel.y() <= I1.height() )
+            {
+                overlap++;
+                I(i,j)+= I1(pulled_pixel.x(), pulled_pixel.y());
+            }
+            I(i,j) /= overlap;
+        }
+    }
     display(I,0,0);
 }
 
