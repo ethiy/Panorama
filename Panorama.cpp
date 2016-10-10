@@ -14,7 +14,37 @@ using namespace std;
 // Record clicks in two images, until right button click
 void getClicks(Window w1, Window w2,
                vector<IntPoint2>& pts1, vector<IntPoint2>& pts2) {
-    // ------------- TODO/A completer ----------
+
+    byte button(0);
+    IntPoint2 click_position;
+
+    // First window
+    cout << "Click points of interest in the first window... Click right button when done." << endl;
+    setActiveWindow(w1);
+    do
+    {
+        button = getMouse(click_position);
+        if( button == 1 )
+        {
+            pts1.push_back(click_position);
+            drawPoint(click_position, RED);
+        }
+    } while (button != 3);
+
+    // Second window
+    cout << "Click the matching points in the second window... Click right button when done." << endl;
+    setActiveWindow(w2);
+    do
+    {
+        button = getMouse(click_position);
+        if( button == 1 )
+        {
+            pts2.push_back(click_position);
+            drawPoint(click_position, RED);
+        }
+    } while (button != 3);
+
+    cout << "Done." << endl;
 }
 
 // Return homography compatible with point matches
@@ -90,8 +120,8 @@ void panorama(const Image<Color,2>& I1, const Image<Color,2>& I2,
 
 // Main function
 int main(int argc, char* argv[]) {
-    const char* s1 = argc>1? argv[1]: srcPath("image0006.jpg");
-    const char* s2 = argc>2? argv[2]: srcPath("image0007.jpg");
+    const char* s1 = argc>1? argv[1]: srcPath("ressources/images/image0006.jpg");
+    const char* s2 = argc>2? argv[2]: srcPath("ressources/images/image0007.jpg");
 
     // Load and display images
     Image<Color> I1, I2;
@@ -110,6 +140,7 @@ int main(int argc, char* argv[]) {
     vector<IntPoint2> pts1, pts2;
     getClicks(w1, w2, pts1, pts2);
 
+    // Show points
     vector<IntPoint2>::const_iterator it;
     cout << "pts1="<<endl;
     for(it=pts1.begin(); it != pts1.end(); it++)
