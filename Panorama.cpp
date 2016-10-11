@@ -8,7 +8,6 @@
 #include <Imagine/LinAlg.h>
 #include <vector>
 #include <sstream>
-#include <cmath>
 
 using namespace Imagine;
 using namespace std;
@@ -29,7 +28,7 @@ void getClicks(Window w1, Window w2,
         if( button == 1 )
         {
             pts1.push_back(click_position);
-            drawPoint(click_position, RED);
+            drawCircle(click_position, 4, RED, 2);
         }
     } while (button != 3);
 
@@ -42,7 +41,7 @@ void getClicks(Window w1, Window w2,
         if( button == 1 )
         {
             pts2.push_back(click_position);
-            drawPoint(click_position, RED);
+            drawCircle( click_position, 4, RED, 2);
         }
     } while (button != 3);
 
@@ -93,22 +92,10 @@ void growTo(float& x0, float& y0, float& x1, float& y1, float x, float y) {
     if(y>y1) y1=y;    
 }
 
-int neighbor(float x)
+Vector<float> pull(Vector<float> v,  Matrix<float> H)
 {
-    int neighbor = floor(x);
-
-    if(x- static_cast<float>(neighbor) >.5)
-        return neighbor+1;
-    else
-        return neighbor;
-}
-
-IntPoint2 pull(IntPoint2 point,  Matrix<float> H)
-{
-    Vector<float> v(3);
-    v[0]=point.x() ; v[1]=point.y(); v[2]=1;
     v=inverse(H)*v; v/=v[2];
-    return IntPoint2(neighbor(v[0]), neighbor(v[1]));
+    return v;
 }
 
 // Panorama construction
@@ -136,33 +123,32 @@ void panorama(const Image<Color,2>& I1, const Image<Color,2>& I2,
     cout << "x0 x1 y0 y1=" << x0 << ' ' << x1 << ' ' << y0 << ' ' << y1<<endl;
 
     Image<Color> I(int(x1-x0), int(y1-y0));
-    setActiveWindow( openWindow(I.width(), I.height()) );
-
     int overlap(0);
     for(size_t i=0; i<I.width(); i++)
     {
         for(size_t j=0; j<I.height(); j++)
         {
-            I(i,j)=RGB< unsigned char >(0,0,0);
+            I(i,j) = RGB< unsigned char >(0,0,0);
             overlap = 0;
-            if(neighbor(i+x0) >= 0 && neighbor(i+x0) < I2.width() && neighbor(j+y0) >= 0 && neighbor(j+y0) < I2.height())
+            v[0] = i+x0; v[1] = j+y0; v[2] = 1;
+            if( v[0] > 0 && v[0] < I2.width() && v[1] >= 0 && v[1] < I2.height() )
             {
                 overlap++;
-                I(i,j) += I2(i,j);
+                I(i,j) += static_cast< RGB< unsigned char > >( I2.interpolate( v[0], v[1]));
             }
-            IntPoint2 pulled_pixel = pull(IntPoint2(i,j), H);
+            Vector<float> u=v;
+            v = pull( v, H);
 
-            if( pulled_pixel.x() >=0 && pulled_pixel.y() >=0 && pulled_pixel.x() < I1.width() && pulled_pixel.y() < I1.height() )
+            if(  v[0] > 0 && v[1] >= 0 &&  v[0] < I1.width() && v[1] < I1.height() )
             {
                 overlap++;
-                I(i,j)+= I1(pulled_pixel.x(), pulled_pixel.y());
+                I(i,j) += static_cast< RGB< unsigned char > >( I1.interpolate( v[0], v[1]));
             }
-            cout << overlap << endl;
             if(overlap)
                 I(i,j) /= overlap;
-            cout << "I(" << i << "," << j << ")= " << I(i,j) << endl; 
         }
     }
+    setActiveWindow( openWindow(I.width(), I.height()) );
     display(I,0,0);
 }
 
